@@ -1,26 +1,27 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const userRoutes = require('./routes/userRoutes');
-const todoRoutes = require('./routes/todoRoutes');
-const sessionRoutes = require('./routes/sessionRoutes');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const userRouter = require('./routes/userRoutes');
+const todoRouter = require('./routes/todoRoutes');
+const dotenv = require("dotenv").config()
+const errorHandler = require("./middleware/errorHandling.js");
+const connectDb = require("./config/dbConnection")
 
-dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(express.json())
+app.use(cors());
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+connectDb()
 
-app.get('/', (req, res) => {
-  res.send('Welcome to the Todo App API');
-});
+app.use('/api/todos', todoRouter);
+app.use("/api/users", userRouter)
 
-app.use('/api', userRoutes);
-app.use('/api', todoRoutes);
-app.use('/api', sessionRoutes);
+app.use(errorHandler)
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const port = process.env.PORT || 5000;
+
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`)
+})

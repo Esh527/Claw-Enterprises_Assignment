@@ -1,24 +1,78 @@
-const User = require('../models/User');
-const { register, login } = require('../auth');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-exports.registerUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await register(email, password);
-    const newUser = new User({ email, password });
-    await newUser.save();
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+const User = require('../models/user')
 
-exports.loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await login(email, password);
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+const asyncHandler = require("express-async-handler")
+
+
+
+const registerUser = asyncHandler(async (req, res) => {
+    const { username, email, password } = req.body
+    if (!username || !email || !password) {
+        res.status(400)
+        throw new Error("All fields are mandaroty")
+    }
+    const existingUser = await User.findOne({ email })
+
+    if (existingUser) {
+        res.status(400)
+        throw new Error("User Already registerd")
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // console.log(hashedPassword)
+    const newUser = await User.create({
+        username,
+        email,
+        password: hashedPassword
+    });
+    console.log(`user created ${newUser}`)
+    if (newUser) {
+        res.status(201).json({ _id: newUser.id, email: newUser.email })
+    }
+    else {
+        res.status(400)
+        throw new Error("User data is not valid")
+    }
+    res.json({ message: "User registered" })
+})
+
+
+
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body
+    if (!email || !password) {
+        res.status(400)
+        throw new Error("All fields are mandaroty")
+    }
+    const userExist = await User.findOne({ email })
+    if (!userExist) throw new Error("Invalid User")
+
+    const isMatch = await bcrypt.compare(password, userExist.password);
+
+    if (userExist && isMatch) {
+        const token = jwt.sign(
+            {
+                user: {
+                    username: userExist.username,
+                    email: userExist.email,
+                    id: userExist.id
+                }
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({ token })
+    }
+    else {
+        res.status(400)
+        throw new Error("Invalid Passsword")
+    }
+
+})
+
+
+
+
+module.exports = { registerUser, loginUser }

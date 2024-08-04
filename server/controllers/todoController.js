@@ -1,45 +1,64 @@
-const Todo = require('../models/Todo');
+const Todo = require('../models/todo');
+const asyncHandler = require('express-async-handler')
 
-exports.createTodo = async (req, res) => {
-  try {
-    const todo = new Todo({
-      userId: req.user.id,
-      title: req.body.title
-    });
-    await todo.save();
-    res.status(201).json(todo);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
 
-exports.getTodos = async (req, res) => {
-  try {
-    const todos = await Todo.find({ userId: req.user.id });
-    res.status(200).json(todos);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+// Create todo
+//route POST /api/todos
+exports.createTodo = asyncHandler(async (req, res) => {
+    const { title } = req.body;
+    if(!title) {
+        res.status(400)
+        throw new Error("Invalid title")
+    }
+    const newTodo = await Todo.create({ user_id: req.user.id, title})
+    res.status(201).json({newTodo})
+});
 
-exports.updateTodo = async (req, res) => {
-  try {
-    const todo = await Todo.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      req.body,
-      { new: true }
-    );
-    res.status(200).json(todo);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
 
-exports.deleteTodo = async (req, res) => {
-  try {
-    await Todo.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
-    res.status(200).json({ message: 'Todo deleted' });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+// Get All todos of logged user
+//route GET /api/todos
+exports.getTodos = asyncHandler(async (req, res) => {
+    const todos = await Todo.find({ user_id: req.user.id})
+    res.status(200).json({todos})
+
+});
+
+
+// update todo
+//route PUT /api/todos/:id
+exports.updateTodo = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const todo = await Todo.findById(id)
+    if (!todo) {
+        res.status(404)
+        throw new Error("Todo Not Found")
+    }
+    if (todo.user_id.toString() != req.user.id) {
+        res.status(403)
+        throw new Error("User not permitted to update")
+    }
+
+    const updateTodo = await Todo.findByIdAndUpdate(id, req.body, { new: true })
+    res.status(200).json({ updateTodo })
+});
+
+
+// Get todo by id
+//route DELETE /api/todos/:id
+
+exports.deleteTodo = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const todo = await Todo.findById(id)
+    if(!todo){
+        res.status(404)
+        throw new Error("Todo Not Found")
+    }
+
+    if (todo.user_id.toString() != req.user.id) {
+        res.status(403)
+        throw new Error("User not permitted to delete")
+    }
+    const deleteTodo = await Todo.findByIdAndDelete(id)
+    res.status(200).json({deleteTodo})
+
+});
