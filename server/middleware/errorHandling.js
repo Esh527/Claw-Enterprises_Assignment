@@ -1,62 +1,22 @@
-const errorHandler = (err, req, res, next) => {
-    const statusCode = res.statusCode ? res.statusCode : 500;
+const express = require('express');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const userRoutes = require('./routes/userRoutes');
+const todoRoutes = require('./routes/todoRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
 
-    switch (statusCode) {
-        case 400:
-            res.json({ title: "Validation Failed", message: err.message, stackTrace: err.stack });
-            break;
-        case 404:
-            res.json({ title: "Not Found", message: err.message, stackTrace: err.stack });
-            break;
-        case 401:
-            res.json({ title: "Unauthorized", message: err.message, stackTrace: err.stack });
-            break;
-        case 403:
-            res.json({ title: "Forbidden", message: err.message, stackTrace: err.stack });
-            break;
-        case 500:
-            res.json({ title: "Server Error", message: err.message, stackTrace: err.stack });
-            break;
-        default:
-            console.log("No Error");
-            break;
-    }
-    next();
-};
+dotenv.config();
 
-module.exports = errorHandler;
+const app = express();
+app.use(express.json());
 
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log(err));
 
+app.use('/api', userRoutes);
+app.use('/api', todoRoutes);
+app.use('/api', sessionRoutes);
 
-
-// const errorHandler = (err, req, res, next) => {
-//     const statusCode = res.statusCode ? res.statusCode : 500;
-
-//     switch (statusCode) {
-//         case 400:
-//             res.json({ title: "Validation Failed", message: err.message, stackTrace: err.stack })
-//             break;
-//         case 404:
-//             res.json({ title: "Not Found", message: err.message, stackTrace: err.stack })
-//             break;
-//         case 401:
-//             res.json({ title: "Unauthorized", message: err.message, stackTrace: err.stack })
-//             break;
-//         case 403:
-//             res.json({ title: "Forbidden", message: err.message, stackTrace: err.stack })
-//             break;
-//         case 500:
-//             res.json({ title: "Sever Error", message: err.message, stackTrace: err.stack })
-//             break;
-
-//         default:
-//             console.log("No Error")
-//             break;
-//     }
-//     next();
-
-// }
-
-
-
-// module.exports = errorHandler
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

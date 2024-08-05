@@ -1,34 +1,22 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const userRouter = require('./routes/userRoutes');
-const todoRouter = require('./routes/todoRoutes');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const errorHandler = require('./middleware/errorHandling');
-const connectDb = require('./config/dbConnection');
+const userRoutes = require('./routes/userRoutes');
+const todoRoutes = require('./routes/todoRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
 
-// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
-app.use(bodyParser.json());
-app.use(cors({
-    origin: "http://localhost:3000",
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
-}));
-
-connectDb();
-
 app.use(express.json());
 
-app.use('/api/todos', todoRouter);
-app.use('/api/users', userRouter);
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log(err));
 
-app.use(errorHandler);
+app.use('/api', userRoutes);
+app.use('/api', todoRoutes);
+app.use('/api', sessionRoutes);
 
-const port = process.env.PORT || 5000;
-
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

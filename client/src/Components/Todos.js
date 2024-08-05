@@ -1,217 +1,94 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-
-import { FaEdit, FaTrash, FaSave } from 'react-icons/fa';
-//import "./index.css"
 
 const Todos = () => {
-    const [todos, setTodos] = useState([]);
-    const [title, setTitle] = useState('');
-    const [editingId, setEditingId] = useState(null);
-    const [editingTitle, setEditingTitle] = useState('');
+  const [todos, setTodos] = useState([]);
+  const [title, setTitle] = useState('');
+
+  useEffect(() => {
+    const fetchTodos = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await axios.get('http://localhost:5000/todos', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTodos(response.data);
+      } catch (err) {
+        alert(err.response.data.error);
+      }
+    };
+    fetchTodos();
+  }, []);
+
+  const handleAddTodo = async (e) => {
+    e.preventDefault();
     const token = localStorage.getItem('token');
-    const navigate = useNavigate()
+    try {
+      const response = await axios.post('http://localhost:5000/todos', { title }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTodos([...todos, response.data]);
+      setTitle('');
+    } catch (err) {
+      alert(err.response.data.error);
+    }
+  };
 
-    useEffect(() => {
-        if (!token) {
-            navigate('/login');
-            return;
-        }
+  const handleToggleComplete = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const todo = todos.find(todo => todo._id === id);
+      const response = await axios.put(`http://localhost:5000/todos/${id}`, {
+        ...todo,
+        completed: !todo.completed
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTodos(todos.map(todo => todo._id === id ? response.data : todo));
+    } catch (err) {
+      alert(err.response.data.error);
+    }
+  };
 
-        const fetchTodos = async () => {
-            try {
-                const response = await axios.get('https://claw-enterprises-assignment-g4vk.onrender.com/api/todos', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                // console.log(response)
-                setTodos(response.data.todos);
-            } catch (error) {
-                console.log(error);
-            }
+  const handleDeleteTodo = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`http://localhost:5000/todos/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTodos(todos.filter(todo => todo._id !== id));
+    } catch (err) {
+      alert(err.response.data.error);
+    }
+  };
 
-        };
-        fetchTodos();
-    }, [token, navigate]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.post('https://claw-enterprises-assignment-g4vk.onrender.com/api/todos', { title }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            console.log(response)
-            setTodos([...todos, response.data.newTodo]);
-            setTitle('');
-
-        } catch (error) {
-            console.log(error);
-            alert(error.response.data.message)
-            setTitle("")
-        }
-    };
-
-    const handleUpdateTodo = async (id, completed) => {
-        try {
-            const response = await axios.put(`https://claw-enterprises-assignment-g4vk.onrender.com/api/todos/${id}`,
-                { completed: !completed }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            console.log(response.data);
-            setTodos(todos.map(todo =>
-                todo._id === id ? { ...todo, completed: response.data.updateTodo.completed } : todo
-            ));
-        } catch (error) {
-            console.log(error);
-            alert(error.response.data.message)
-
-        }
-    };
-
-
-
-    const handleLogout = () => {
-        localStorage.removeItem("token")
-        navigate("/login")
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await axios.delete(`https://claw-enterprises-assignment-g4vk.onrender.com/api/todos/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setTodos(todos.filter(todo => todo._id !== id));
-        } catch (error) {
-            console.log(error);
-            alert(error.response.data.message)
-        }
-    };
-
-
-    const handleEdit = (id, title) => {
-        setEditingId(id);
-        setEditingTitle(title);
-    };
-
-
-
-    const handleSave = async (id) => {
-        try {
-            const response = await axios.put(`https://claw-enterprises-assignment-g4vk.onrender.com/api/todos/${id}`,
-                { title: editingTitle }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            console.log(response.data);
-            setTodos(todos.map(todo =>
-                todo._id === id ? { ...todo, title: response.data.updateTodo.title } : todo
-            ));
-            setEditingId(null);
-            setEditingTitle('');
-        } catch (error) {
-            console.log(error);
-            alert(error.response.data.message)
-        }
-    };
-
-    return (
-        <div className="todos-bg-container">
-            <div className='container'>
-                <div className='row'>
-                    <div className='col-12'>
-                        <h1 className="todos-heading">Todos</h1>
-                        <div className='mt-3 mb-3  d-flex flex-row align-items-center justify-content-between'>
-                            <h1 className="create-task-heading">
-                                Create <span className="create-task-heading-subpart">Task</span>
-                            </h1>
-
-                            <button onClick={() => handleLogout()} className='btn btn-danger'>
-                                Logout
-                            </button>
-
-                        </div>
-
-
-
-                        <form onSubmit={handleSubmit} className="mb-4">
-                            <div>
-                                <input
-                                    type="text"
-                                    className="todo-user-input"
-                                    placeholder="Add a task"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    required
-                                />
-                                <button className="button" type="submit">
-                                    Add
-                                </button>
-                            </div>
-                        </form>
-                        <h1 className="todo-items-heading">
-                            My <span className="todo-items-heading-subpart">Tasks</span>
-                        </h1>
-
-                        <ul className="todo-items-container">
-                            {todos.map(todo => (
-                                <li key={todo._id} className="todo-item-container d-flex flex-row">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox-input"
-                                        checked={todo.completed}
-                                        onChange={() => handleUpdateTodo(todo._id, todo.completed)}
-                                    />
-                                    
-                                    <div className="label-container d-flex flex-row">
-                                        
-                                        
-                                        {editingId === todo._id ? (
-                                            <>
-                                                <input
-                                                    type="text"
-                                                    className="edit-todo-input"
-                                                    value={editingTitle}
-                                                    onChange={(e) => setEditingTitle(e.target.value)}
-                                                />
-                                                <button onClick={() => handleSave(todo._id)} className="btn delete-icon">
-                                                    <FaSave />
-                                                </button>
-                                            </>
-                                        ) :(
-                                                <>
-                                                    <label
-                                                        className={`checkbox-label ${todo.completed ? "completed" : ""}`}
-                                                    >
-                                                        {todo.title}
-                                                    </label>
-                                                    <div className="delete-icon-container">
-                                                        <button onClick={() => handleEdit(todo._id, todo.title)} className="btn delete-icon">
-                                                            <FaEdit />
-                                                        </button>
-                                                       
-                                                    </div>
-                                
-                                                </>
-                                        )}
-                                     
-                                        <button onClick={() => handleDelete(todo._id)} className="btn delete-icon">
-                                            <FaTrash />
-                                        </button>
-                                      
-                                    </div>
-
-
-
-                                </li>
-                            ))}
-                        </ul>
-
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    );
-}
+  return (
+    <div>
+      <h2>Todos</h2>
+      <form onSubmit={handleAddTodo}>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Add a new todo"
+        />
+        <button type="submit">Add</button>
+      </form>
+      <ul>
+        {todos.map(todo => (
+          <li key={todo._id}>
+            <span
+              style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+              onClick={() => handleToggleComplete(todo._id)}
+            >
+              {todo.title}
+            </span>
+            <button onClick={() => handleDeleteTodo(todo._id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 export default Todos;

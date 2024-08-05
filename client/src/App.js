@@ -3,20 +3,16 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Register from './Components/Register';
 import Login from './Components/Login';
 import Todos from './Components/Todos';
-import "./App.css";
 
-const App = () => {
+function App() {
   return (
-    <div className="app">
-      <Router>
-        <Routes>
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/todos" element={<Todos />} />
-          <Route path="/" element={<Login />} />
-        </Routes>
-      </Router>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/todos" element={<Todos />} />
+      </Routes>
+    </Router>
   );
 }
 
