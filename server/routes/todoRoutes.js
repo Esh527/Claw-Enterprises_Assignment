@@ -1,10 +1,14 @@
-const express = require("express")
-const {registerUser, loginUser} = require ("../controllers/userController")
+const express = require('express');
+const { createTodo, getTodos, updateTodo, deleteTodo } = require('../controllers/todoController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-const userRouter = express.Router()
+const todoRouter = express.Router();
 
-userRouter.post("/register" , registerUser);
-userRouter.post("/login",loginUser)
+todoRouter.use(authMiddleware)
 
+todoRouter.post('/',  createTodo);
+todoRouter.get('/',  getTodos);
+todoRouter.put('/:id', updateTodo);
+todoRouter.delete('/:id',deleteTodo);
 
-module.exports = userRouter
+module.exports = todoRouter;
